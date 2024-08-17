@@ -1,0 +1,57 @@
+#include "stdint.h"
+#define RCC_BASE 0x40021000
+#define GPIO_Port_A  0x40010800
+#define EXTI 0x40010400
+#define AFIO 0x40010000
+#define AFIO_EXTICR1 *(volatile uint32_t *) (AFIO+0x08)
+#define EXTI_IMR *(volatile uint32_t *) (EXTI+0x00)
+#define EXTI_RTSR *(volatile uint32_t *) (EXTI+0x08)
+#define EXTI_SWIER *(volatile uint32_t *) (EXTI+0x10)
+#define EXTI_PR *(volatile uint32_t *) (EXTI+0x14)
+#define RCC_ABP2ENR *(volatile uint32_t *) (RCC_BASE+0x18)
+#define GPIOA_CRL *(volatile uint32_t *) (GPIO_Port_A+0x00)
+#define GPIOA_CRH *(volatile uint32_t *) (GPIO_Port_A+0x04)
+#define GPIOA_ODR *(volatile uint32_t *) (GPIO_Port_A+0x0C)
+#define NVIC_ISER0 *(volatile uint32_t *) (0xE000e100)
+
+ void CLOCK_INIT()
+{
+	 RCC_ABP2ENR |=(1<<0);
+	 RCC_ABP2ENR |=(1<<2);
+
+}
+ void GPIO_PIN0_INPUT_INIT(void)
+ {
+	 GPIOA_CRL |=(1<<2);
+ }
+ void GPIO_PIN13_OUTPUT_INIT(void)
+ {
+	 GPIOA_CRH &=0xff0fffff;
+	 GPIOA_CRH |=0x00200000;
+ }
+
+
+
+int main(void)
+{
+	CLOCK_INIT();
+	GPIO_PIN0_INPUT_INIT();
+	GPIO_PIN13_OUTPUT_INIT();
+	//select portA for EXTI0
+	AFIO_EXTICR1=0x0;
+	//Enable Mask for EXTTI0
+	EXTI_IMR |=(1<<0);
+	//Rising trigger enable
+	EXTI_RTSR |=(1<<0);
+	EXTI_SWIER |=(1<<0);
+	//Enable NVIC for IRQ6
+	NVIC_ISER0 |=(1<<6);
+	while(1);
+
+}
+void EXTI0_IRQHandler(void)
+{
+	GPIOA_ODR ^=1<<13;
+	EXTI_PR |=(1<<0);
+
+}

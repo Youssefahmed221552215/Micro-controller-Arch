@@ -1,0 +1,76 @@
+#include "stdint"
+#include <avr/io.h>
+#include <avr/delay.h>
+#include <avr/interrupt.h>
+#define MCUCR (*(volatile unsigned int* )(0x35))
+#define MCUCSR (*(volatile unsigned int* )(0x34))
+#define GICR (*(volatile unsigned int* )(0x3B))
+#define GIFR (*(volatile unsigned int* )(0x3A))
+#define SREG (*(volatile unsigned int* )(0x3F))
+#define  PORTD_DDR (*(volatile unsigned int *)(0x31))
+#define PORTB_DDR	(*(volatile unsigned int*)(0x37))
+void EXTERNAL_INTERRUPT_CONFIG()
+{
+ //any logical change on INT0 generates an interrupt request
+	MCUCR |=(1<<0);
+	//the rising edge of INT1 generates an interrupt request
+	MCUCR |=(0b11<<2);
+	//SC2 is written to zero a falling edge on INT2 activates the interrupt 
+	MCUCSR |=(0<<6);
+	//external interrupt for requests (0,1,2) are enabled
+	 GICR |=(0b111<<5);
+	  //gobal interrupt 
+	  sei();
+	
+}
+void PORTD_CONFIG()
+{
+	//set PORTD_PIN(5,6,7)  as a output
+	PORTD_DDR |=(0b111<<5);
+	//set PORTD_PIN(2,3)  as a input
+	PORTD_DDR &=~(0b11<<2);
+
+
+}
+void PORTB_CONFIG()
+{
+//set PORTD_PIN(2) as a input
+	PORTB_DDR &=~(1<<2);
+}
+
+void delay()
+{
+ volatile int i;
+	for(i=0;i<1000;i++);
+}
+
+
+int main()
+{
+    EXTERNAL_INTERRUPT_CONFIG();
+    PORTD_CONFIG();
+     PORTB_CONFIG();
+    while(1)
+    {
+      //clear pins(5,6,7)
+		PORTD_DDR &=~(0b111<<5);
+    }
+
+
+}
+ISR(INT0_vect)
+ {
+	PORTD_DDR |=(1<<5);
+	delay();
+ }
+
+ISR(INT1_vect)
+ {
+	PORTD_DDR |=1<<6;
+	delay();
+ }
+ISR(INT2_vect)
+ {
+	PORTD_DDR |=1<<7;
+	delay();
+ }
